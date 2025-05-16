@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -92,29 +93,39 @@
 
       async function connectWallet() {
         if (!window.ethereum) {
-          alert("MetaMask not found.");
+          alert("MetaMask not found. Please install MetaMask.");
           return;
         }
 
         try {
+          // Request account access
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          if (accounts.length === 0) {
+            alert("No accounts found. Please connect to MetaMask.");
+            return;
+          }
+
+          // Initialize provider and signer
           provider = new ethers.providers.Web3Provider(window.ethereum);
-          await provider.send("eth_requestAccounts", []);
           signer = provider.getSigner();
-          userAddress = await signer.getAddress();
+          userAddress = accounts[0];
           document.getElementById("walletAddress").innerText = "Wallet: " + userAddress;
+
+          // Get USDC balance
           await getUSDCBalance();
 
-          window.ethereum.removeAllListeners('accountsChanged');
-          window.ethereum.on('accountsChanged', async (accounts) => {
-            if (accounts.length === 0) {
+          // Listen for account changes
+          window.ethereum.on('accountsChanged', async (newAccounts) => {
+            if (newAccounts.length === 0) {
               document.getElementById("walletAddress").innerText = "Wallet: Not connected";
               userAddress = null;
             } else {
-              userAddress = accounts[0];
+              userAddress = newAccounts[0];
               document.getElementById("walletAddress").innerText = "Wallet: " + userAddress;
               await getUSDCBalance();
             }
           });
+
         } catch (err) {
           alert("Connection failed: " + err.message);
         }
@@ -200,3 +211,5 @@
   </script>
 </body>
 </html>
+
+
